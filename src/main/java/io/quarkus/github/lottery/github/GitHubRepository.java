@@ -1,7 +1,10 @@
 package io.quarkus.github.lottery.github;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 
@@ -58,25 +61,23 @@ public class GitHubRepository {
                 .list());
     }
 
-    public void commentOnDedicatedNotificationIssue(String username, String topic, String markdownBody) throws IOException {
-        var issue = getOrCreateDedicatedNotificationIssue(username, topic);
-        issue.comment(markdownBody);
+    public void createNotificationIssue(String username, String topic, LocalDate date, String markdownBody) throws IOException {
+        var repo = client().getRepository(ref.repositoryName());
+        for (GHIssue issue : listOpenNotificationIssues(repo, username, topic)) {
+            issue.close();
+        }
+        repo.createIssue(topic + " on " + date)
+                .assignee(username)
+                .body(markdownBody)
+                .create();
     }
 
-    private GHIssue getOrCreateDedicatedNotificationIssue(String username, String topic) throws IOException {
-        var repo = client().getRepository(ref.repositoryName());
-        GHIssue result = null;
-        for (var issue : repo.queryIssues().assignee(username).list()) {
-            if (issue.getTitle().equals(topic)) {
-                result = issue;
-                break;
+    private List<GHIssue> listOpenNotificationIssues(GHRepository repo, String username, String expectedTitlePrefix) {
+        List<GHIssue> result = new ArrayList<>();
+        for (var issue : repo.queryIssues().assignee(username).state(GHIssueState.OPEN).list()) {
+            if (issue.getTitle().startsWith(expectedTitlePrefix)) {
+                result.add(issue);
             }
-        }
-        if (result == null) {
-            result = repo.createIssue(topic)
-                    .assignee(username)
-                    .body("This issue is dedicated to " + topic + ".")
-                    .create();
         }
         return result;
     }

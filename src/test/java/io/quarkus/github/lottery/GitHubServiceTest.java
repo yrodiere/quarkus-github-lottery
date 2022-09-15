@@ -14,6 +14,7 @@ import static org.mockito.Mockito.withSettings;
 
 import java.io.IOException;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
@@ -191,9 +192,12 @@ public class GitHubServiceTest {
     }
 
     @Test
-    void commentOnDedicatedNotificationIssue_notificationIssueExists() throws IOException {
+    void commentOnDedicatedNotificationIssue_notificationIssuesExist() throws IOException {
         var repoRef = new GitHubRepositoryRef(1234L, "quarkusio/quarkus-lottery-reports");
+
         var queryIssuesBuilderMock = Mockito.mock(GHIssueQueryBuilder.ForRepository.class,
+                withSettings().defaultAnswer(Answers.RETURNS_SELF));
+        var issueBuilderMock = Mockito.mock(GHIssueBuilder.class,
                 withSettings().defaultAnswer(Answers.RETURNS_SELF));
 
         given()
@@ -203,26 +207,35 @@ public class GitHubServiceTest {
                     when(repositoryMock.queryIssues()).thenReturn(queryIssuesBuilderMock);
                     when(queryIssuesBuilderMock.assignee("yrodiere")).thenReturn(queryIssuesBuilderMock);
                     var issue1Mock = mockIssueForNotification(mocks, 1, "An unrelated issue");
-                    var issue2Mock = mockIssueForNotification(mocks, 2, "yrodiere's report for quarkusio/quarkus");
+                    var issue2Mock = mockIssueForNotification(mocks, 2,
+                            "yrodiere's report for quarkusio/quarkus on 2017-11-01");
                     var issuesMocks = mockPagedIterable(issue1Mock, issue2Mock);
                     when(queryIssuesBuilderMock.list()).thenReturn(issuesMocks);
+
+                    when(repositoryMock.createIssue("yrodiere's report for quarkusio/quarkus on 2017-11-06"))
+                            .thenReturn(issueBuilderMock);
+                    var issue3Mock = mocks.issue(3);
+                    when(issueBuilderMock.create()).thenReturn(issue3Mock);
                 })
                 .when(() -> {
                     var repo = gitHubService.repository(repoRef);
 
-                    repo.commentOnDedicatedNotificationIssue("yrodiere",
-                            "yrodiere's report for quarkusio/quarkus", "Some content");
+                    repo.createNotificationIssue("yrodiere", "yrodiere's report for quarkusio/quarkus",
+                            LocalDate.of(2017, 11, 6), "Some content");
                 })
                 .then().github(mocks -> {
                     verify(queryIssuesBuilderMock).assignee("yrodiere");
-                    verify(mocks.issue(2)).comment("Some content");
-                    verifyNoMoreInteractions(queryIssuesBuilderMock);
+                    verify(queryIssuesBuilderMock).state(GHIssueState.OPEN);
+                    verify(mocks.issue(2)).close();
+                    verify(issueBuilderMock).assignee("yrodiere");
+                    verify(issueBuilderMock).body("Some content");
+                    verifyNoMoreInteractions(queryIssuesBuilderMock, issueBuilderMock);
                     verifyNoMoreInteractions(mocks.ghObjects());
                 });
     }
 
     @Test
-    void commentOnDedicatedNotificationIssue_notificationIssueDoesNotExist() throws IOException {
+    void commentOnDedicatedNotificationIssue_notificationIssuesDoNotExist() throws IOException {
         var repoRef = new GitHubRepositoryRef(1234L, "quarkusio/quarkus-lottery-reports");
         var queryIssuesBuilderMock = Mockito.mock(GHIssueQueryBuilder.ForRepository.class,
                 withSettings().defaultAnswer(Answers.RETURNS_SELF));
@@ -238,22 +251,23 @@ public class GitHubServiceTest {
                     var issuesMocks = mockPagedIterable(issue1Mock);
                     when(queryIssuesBuilderMock.list()).thenReturn(issuesMocks);
 
-                    when(repositoryMock.createIssue("yrodiere's report for quarkusio/quarkus")).thenReturn(issueBuilderMock);
+                    when(repositoryMock.createIssue("yrodiere's report for quarkusio/quarkus on 2017-11-06"))
+                            .thenReturn(issueBuilderMock);
                     var issue2Mock = mocks.issue(2);
                     when(issueBuilderMock.create()).thenReturn(issue2Mock);
                 })
                 .when(() -> {
                     var repo = gitHubService.repository(repoRef);
 
-                    repo.commentOnDedicatedNotificationIssue("yrodiere",
-                            "yrodiere's report for quarkusio/quarkus", "Some content");
+                    repo.createNotificationIssue("yrodiere", "yrodiere's report for quarkusio/quarkus",
+                            LocalDate.of(2017, 11, 6), "Some content");
                 })
                 .then().github(mocks -> {
                     verify(queryIssuesBuilderMock).assignee("yrodiere");
+                    verify(queryIssuesBuilderMock).state(GHIssueState.OPEN);
                     verify(issueBuilderMock).assignee("yrodiere");
-                    verify(issueBuilderMock).body("This issue is dedicated to yrodiere's report for quarkusio/quarkus.");
+                    verify(issueBuilderMock).body("Some content");
                     verifyNoMoreInteractions(queryIssuesBuilderMock, issueBuilderMock);
-                    verify(mocks.issue(2)).comment("Some content");
                     verifyNoMoreInteractions(mocks.ghObjects());
                 });
     }

@@ -19,7 +19,7 @@ public class NotificationFormatter {
         String topic = report.username() + "'s report for " + repoName;
         // TODO apply user timezone if possible
         LocalDate date = report.drawRef().instant().atZone(ZoneOffset.UTC).toLocalDate();
-        return new MarkdownNotification(report.username(), topic,
+        return new MarkdownNotification(report.username(), topic, date,
                 "Hey @" + report.username() + ", here's your report for " + repoName + " on " + date + ".\n"
                         + renderCategory("Triage", report.issuesToTriage()));
     }

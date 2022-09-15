@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -79,22 +80,22 @@ public class NotificationServiceTest {
                 new Issue(1, "Hibernate ORM works too well", url(1)),
                 new Issue(3, "Hibernate Search needs Solr support", url(3))));
         var markdownNotification1 = new MarkdownNotification("yrodiere", "yrodiere's report for quarkusio/quarkus",
-                "Notif 1");
+                LocalDate.of(2017, 11, 6), "Notif 1");
         when(notificationFormatterMock.formatToMarkdown(lotteryReport1)).thenReturn(markdownNotification1);
         notifier.send(lotteryReport1);
-        verify(notificationRepoMock).commentOnDedicatedNotificationIssue("yrodiere", markdownNotification1.topic(),
-                markdownNotification1.body());
+        verify(notificationRepoMock).createNotificationIssue("yrodiere", markdownNotification1.topic(),
+                markdownNotification1.date(), markdownNotification1.body());
         verifyNoMoreInteractions(gitHubServiceMock, sourceRepoMock, notificationRepoMock, notificationFormatterMock);
 
         var lotteryReport2 = new LotteryReport(drawRef, "gsmet", List.of(
                 new Issue(4, "Hibernate Search and Validator are on a boat", url(4)),
                 new Issue(5, "Hibernate Validator needs Scala support", url(5))));
         var markdownNotification2 = new MarkdownNotification("gsmet", "gsmet's report for quarkusio/quarkus",
-                "Notif 2");
+                LocalDate.of(2017, 11, 6), "Notif 2");
         when(notificationFormatterMock.formatToMarkdown(lotteryReport2)).thenReturn(markdownNotification2);
         notifier.send(lotteryReport2);
-        verify(notificationRepoMock).commentOnDedicatedNotificationIssue("gsmet", markdownNotification2.topic(),
-                markdownNotification2.body());
+        verify(notificationRepoMock).createNotificationIssue("gsmet", markdownNotification2.topic(),
+                markdownNotification2.date(), markdownNotification2.body());
         verifyNoMoreInteractions(gitHubServiceMock, sourceRepoMock, notificationRepoMock, notificationFormatterMock);
     }
 

@@ -1,4 +1,6 @@
 package io.quarkus.github.lottery.notification;
 
-public record MarkdownNotification(String username, String topic, String body) {
+import java.time.LocalDate;
+
+public record MarkdownNotification(String username, String topic, LocalDate date, String body) {
 }

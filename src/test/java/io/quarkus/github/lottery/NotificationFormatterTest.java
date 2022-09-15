@@ -3,6 +3,7 @@ package io.quarkus.github.lottery;
 import static io.quarkus.github.lottery.MockHelper.url;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -44,6 +45,7 @@ public class NotificationFormatterTest {
         var lotteryReport = new LotteryReport(drawRef, "yrodiere", List.of());
         assertThat(notificationFormatter.formatToMarkdown(lotteryReport))
                 .isEqualTo(new MarkdownNotification("yrodiere", "yrodiere's report for quarkusio/quarkus",
+                        LocalDate.of(2017, 11, 6),
                         """
                                 Hey @yrodiere, here's your report for quarkusio/quarkus on 2017-11-06.
                                 # Triage
@@ -58,6 +60,7 @@ public class NotificationFormatterTest {
                 new Issue(3, "Hibernate Search needs Solr support", url(3))));
         assertThat(notificationFormatter.formatToMarkdown(lotteryReport))
                 .isEqualTo(new MarkdownNotification("yrodiere", "yrodiere's report for quarkusio/quarkus",
+                        LocalDate.of(2017, 11, 6),
                         """
                                 Hey @yrodiere, here's your report for quarkusio/quarkus on 2017-11-06.
                                 # Triage
